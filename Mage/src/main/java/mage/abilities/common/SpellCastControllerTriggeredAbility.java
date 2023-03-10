@@ -24,6 +24,8 @@ public class SpellCastControllerTriggeredAbility extends TriggeredAbilityImpl {
     protected boolean rememberSourceAsCard;
     // Trigger only for spells cast from this zone. Default is from any zone.
     private Zone fromZone = Zone.ALL;
+    // Boolean to trigger only on spells cast from all zone besides one specific zone, default false.
+    protected boolean excludingFromZone=false;
 
     public SpellCastControllerTriggeredAbility(Effect effect, boolean optional) {
         this(Zone.BATTLEFIELD, effect, StaticFilters.FILTER_SPELL_A, optional, false);
@@ -36,6 +38,13 @@ public class SpellCastControllerTriggeredAbility extends TriggeredAbilityImpl {
     public SpellCastControllerTriggeredAbility(Effect effect, FilterSpell filter, boolean optional, Zone fromZone) {
         this(effect, filter, optional, false);
         this.fromZone = fromZone;
+        makeTriggerPhrase();
+    }
+
+    public SpellCastControllerTriggeredAbility(Effect effect, boolean optional, Zone fromZone, boolean excludingFromZone) {
+        this(effect, StaticFilters.FILTER_SPELL_A, optional, false);
+        this.fromZone = fromZone;
+        this.excludingFromZone=excludingFromZone;
         makeTriggerPhrase();
     }
 
@@ -82,7 +91,7 @@ public class SpellCastControllerTriggeredAbility extends TriggeredAbilityImpl {
         Spell spell = game.getStack().getSpell(event.getTargetId());
         if (spell == null
                 || !filter.match(spell, getControllerId(), this, game)
-                || !(fromZone == Zone.ALL || fromZone == spell.getFromZone())) {
+                || !(fromZone == Zone.ALL || (fromZone == spell.getFromZone() ^ excludingFromZone))) {
             return false;
         }
         this.getEffects().setValue("spellCast", spell);
@@ -103,6 +112,6 @@ public class SpellCastControllerTriggeredAbility extends TriggeredAbilityImpl {
     }
 
     private void makeTriggerPhrase() {
-        setTriggerPhrase("Whenever you cast " + filter.getMessage() + (fromZone != Zone.ALL ? " from your " + fromZone.toString().toLowerCase() : "") + ", ");
+        setTriggerPhrase("Whenever you cast " + filter.getMessage() + (fromZone != Zone.ALL ? ((excludingFromZone) ? (" from anywhere other than your " + fromZone.toString().toLowerCase()) : (" from your " + fromZone.toString().toLowerCase())) : "") + ", ");
     }
 }
